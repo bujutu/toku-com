@@ -1,0 +1,357 @@
+/*
+  smartpay_app_js.js
+  - Fetches CSV data from the provided Google Sheets URL
+  - Renders UI in index.html
+  - Implements:
+    * default selections for paypay & smbc_card
+    * page2 shows first 5 items and "詳細を表示" to expand
+    * clicking an item opens dialog to set custom rate, reset, or close
+    * selected methods and custom rates saved in localStorage
+*/
+
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYRcz7Ax_jhyqIqM2IGwZIge9vTJFyop8mPK9VOfGWTgsotACeKiAzkwMreqhgYA/pub?output=csv";
+
+let storeData = []; // array of objects from CSV
+const methods = [
+  { id: "paypay", name: "PayPay" },
+  { id: "rakuten_pay", name: "楽天Pay" },
+  { id: "id", name: "iD" },
+  { id: "quicpay", name: "QUICPay" },
+  { id: "smbc_card", name: "三井住友カード" },
+  { id: "smbc_touch", name: "三井住友カード（スマホタッチ）" },
+  { id: "mufg_card", name: "三菱UFJカード" },
+  { id: "recruit_card", name: "リクルートカード" },
+  { id: "jcb_w", name: "JCBカードW" },
+  { id: "epos_card", name: "EPOSカード" }
+];
+
+const page1 = document.getElementById("page1");
+const page2 = document.getElementById("page2");
+const methodList = document.getElementById("methodList");
+const resultDiv = document.getElementById("result");
+const showMoreBtn = document.getElementById("showMoreBtn");
+const settingsBtn = document.getElementById("settingsBtn");
+const searchBtn = document.getElementById("searchBtn");
+const saveBtn = document.getElementById("saveBtn");
+const overlay = document.getElementById("overlay");
+const dialog = document.getElementById("dialog");
+const dialogContent = document.getElementById("dialogContent");
+const dialogInput = document.getElementById("dialogInput");
+const dialogSave = document.getElementById("dialogSave");
+const dialogReset = document.getElementById("dialogReset");
+const dialogClose = document.getElementById("dialogClose");
+
+let showAll = false;
+let dialogTarget = null;
+
+// --- storage helpers ---
+function loadSettings() {
+  // default to paypay and smbc_card
+  return JSON.parse(localStorage.getItem("myMethods") || '["paypay","smbc_card"]');
+}
+function saveSettings(list) {
+  localStorage.setItem("myMethods", JSON.stringify(list));
+}
+function loadCustomRates() {
+  return JSON.parse(localStorage.getItem("customRates") || "{}");
+}
+function saveCustomRates(obj) {
+  localStorage.setItem("customRates", JSON.stringify(obj));
+}
+
+// --- CSV loading ---
+async function loadData() {
+  try {
+    const res = await fetch(CSV_URL, {cache: "no-store"});
+    const text = await res.text();
+    const rows = text.trim().split("\n").map(r => r.split(","));
+    const headers = rows.shift().map(h => h.replace(/\r/g,"").trim());
+    storeData = rows.map(r => {
+      const obj = {};
+      r.forEach((v,i)=> obj[headers[i]] = (v||"").trim());
+      return obj;
+    }).filter(o => Object.keys(o).length > 0);
+    console.log("CSV loaded, rows:", storeData.length);
+  } catch (e) {
+    console.error("CSV load failed:", e);
+  }
+}
+
+// --- rendering methods list (page2) ---
+function renderMethodList() {
+  const my = loadSettings();
+  const display = showAll ? methods : methods.slice(0,5);
+  methodList.innerHTML = display.map(m => {
+    const checked = my.includes(m.id) ? "checked" : "";
+    const customRates = loadCustomRates();
+    const cr = customRates[m.id];
+    const crHtml = cr != null ? `<span class="custom-rate">${cr}%</span>` : "";
+    return `
+      <label data-id="${m.id}">
+        <input type="checkbox" value="${m.id}" ${checked}>
+        <span class="name">${m.name}</span>
+        ${cr != null ? `<span class="rate">(${cr}% 設定中)</span>` : `<span class="rate"></span>`}
+      </label>
+    `;
+
+
+  }).join("");
+  // attach click handler is via delegation below
+}
+
+// click delegation for methodList to open dialog when label is clicked
+methodList.addEventListener("click", (e) => {
+  const label = e.target.closest("label");
+  if (!label) return;
+  const id = label.dataset.id;
+  // if the click target was the checkbox, just toggle selection and return
+  if (e.target.tagName.toLowerCase() === "input") {
+    // nothing else here
+    return;
+  }
+  openDialogFor(id);
+});
+
+// open dialog
+function openDialogFor(id) {
+  dialogTarget = id;
+  const m = methods.find(x=>x.id===id);
+  const customRates = loadCustomRates();
+  const current = customRates[id];
+  dialogContent.innerHTML = `<strong>${m.name}</strong><div style="margin-top:8px; color:#555;">現在の設定: ${current != null ? current + '%' : 'デフォルト'}</div>`;
+  dialogInput.value = current != null ? String(current) : "";
+  overlay.classList.remove("hidden");
+  dialog.classList.remove("hidden");
+  dialogInput.focus();
+}
+
+// dialog controls
+dialogSave.addEventListener("click", ()=> {
+  if (!dialogTarget) return;
+  const v = dialogInput.value.trim();
+  const customRates = loadCustomRates();
+  if (v === "") {
+    // treat as reset
+    delete customRates[dialogTarget];
+  } else {
+    const n = Number(v);
+    if (Number.isNaN(n)) {
+      alert("数値を入力してください。例: 1.5");
+      return;
+    }
+    customRates[dialogTarget] = n;
+  }
+  saveCustomRates(customRates);
+  renderMethodList();
+  closeDialog();
+});
+dialogReset.addEventListener("click", ()=> {
+  if (!dialogTarget) return;
+  const customRates = loadCustomRates();
+  delete customRates[dialogTarget];
+  saveCustomRates(customRates);
+  renderMethodList();
+  closeDialog();
+});
+dialogClose.addEventListener("click", closeDialog);
+overlay.addEventListener("click", closeDialog);
+
+function closeDialog() {
+  dialogTarget = null;
+  overlay.classList.add("hidden");
+  dialog.classList.add("hidden");
+}
+
+// show more toggle
+showMoreBtn.addEventListener("click", ()=> {
+  showAll = !showAll;
+  showMoreBtn.textContent = showAll ? "簡略表示" : "詳細を表示";
+  renderMethodList();
+});
+
+// settings button to open page2
+settingsBtn.addEventListener("click", ()=> {
+  page1.classList.add("hidden");
+  page2.classList.remove("hidden");
+  renderMethodList();
+});
+
+// save button on page2
+saveBtn.addEventListener("click", ()=> {
+  const selected = [...document.querySelectorAll("#methodList input:checked")].map(i=>i.value);
+  saveSettings(selected);
+  page2.classList.add("hidden");
+  page1.classList.remove("hidden");
+});
+
+// --- fuzzy matching helpers ---
+function toHiragana(str) {
+  if(!str) return "";
+  return str.normalize("NFKC").replace(/[ァ-ン]/g, s => String.fromCharCode(s.charCodeAt(0)-0x60)).replace(/[^ぁ-ん]/g,"");
+}
+function similarity(a,b) {
+  let matches = 0;
+  for (let i=0;i<Math.min(a.length,b.length);i++) if (a[i]===b[i]) matches++;
+  return matches / Math.max(a.length,b.length,1);
+}
+
+// --- search handling ---
+searchBtn.addEventListener("click", () => doSearch());
+
+async function doSearch() {
+  const input = document.getElementById("storeInput").value.trim();
+  if (!input) {
+    resultDiv.classList.remove("hidden");
+    resultDiv.innerHTML = "店名を入力してください";
+    return;
+  }
+
+  // ensure CSV loaded
+  if (storeData.length === 0) {
+    await loadData();
+  }
+
+  // try exact CSV match first (case-insensitive contains)
+  const results = storeData.filter(s => {
+    for (const k in s) {
+      if ((s[k]||"").toString().toLowerCase().includes(input.toLowerCase())) return true;
+    }
+    return false;
+  });
+
+  // if none found, fallback to built-in rate approximation using method names
+  let matchedRecord = null;
+  if (results.length > 0) {
+    matchedRecord = results[0];
+  } else {
+    // fallback: try to match against a small set of known stores in CSV-style keys
+    // create candidates from storeData names if available
+    const names = storeData.map(r => r["店舗名"] || r["name"] || "");
+    let best = null, bestScore = 0;
+    const inputH = toHiragana(input);
+    for (const nm of names) {
+      const s = similarity(inputH, toHiragana(nm));
+      if (s > bestScore) { bestScore = s; best = nm; }
+    }
+    if (bestScore >= 0.3) {
+      matchedRecord = storeData.find(r => (r["店舗名"]||"") === best) || null;
+    }
+  }
+
+  if (!matchedRecord) {
+    resultDiv.classList.remove("hidden");
+    resultDiv.innerHTML = "一致する店舗が見つかりませんでした（CSVの読み込み状況や名称を確認してください）";
+    return;
+  }
+
+  // Build display using selected methods & custom rates
+  const my = loadSettings();
+  const customRates = loadCustomRates();
+
+  // We'll try to map CSV columns to method ids:
+  // common CSV column names we look for
+  const columnMap = {
+    paypay: ["paypay","PayPay","Paypay"],
+    rakuten_pay: ["楽天Pay","RakutenPay","Rakuten"],
+    id: ["iD","iD(Apple)","id"],
+    quicpay: ["QUICPay","QUICPay","quicpay"],
+    smbc_card: ["三井住友カード","SMBCカード","smbc_card"],
+    smbc_touch: ["Visaタッチ","Mastercardタッチ","smbc_touch"],
+    mufg_card: ["三菱UFJカード","mufg_card"],
+    recruit_card: ["リクルートカード","recruit_card"],
+    jcb_w: ["JCBカードW","jcb_w"],
+    epos_card: ["EPOSカード","epos_card"]
+  };
+
+  function lookupRate(record, methodId) {
+    // priority: customRates > exact column matches > fallback empty
+    if (customRates[methodId] != null) return customRates[methodId];
+    const names = columnMap[methodId] || [];
+    for (const nm of names) {
+      for (const key of Object.keys(record)) {
+        if (key.trim().toLowerCase() === nm.trim().toLowerCase()) {
+          const v = record[key];
+          if (v && v.match(/[\d.]+/)) return parseFloat(v);
+        }
+      }
+    }
+    // try to find key that includes method name
+    for (const key of Object.keys(record)) {
+      for (const nm of names) {
+        if (key.toLowerCase().includes(nm.toLowerCase())) {
+          const v = record[key];
+          if (v && v.match(/[\d.]+/)) return parseFloat(v);
+        }
+      }
+    }
+    return null;
+  }
+
+  // compile results: for each selected or available method show rate
+  const lines = [];
+  // 店舗名を取得して matchedName に代入
+  const matchedName = matchedRecord["店舗名"] || matchedRecord["name"] || "該当店舗";
+  const methodsToShow = my.length ? my : methods.map(m=>m.id);
+  for (const mId of methodsToShow) {
+    const mObj = methods.find(x=>x.id===mId) || {id:mId, name:mId};
+    const rate = lookupRate(matchedRecord, mId);
+    lines.push(`${mObj.name}: ${rate != null ? rate + '%' : '-'}`);
+  }
+  const resultList = [];
+  for (const mId of methodsToShow) {
+    const mObj = methods.find(x=>x.id===mId) || {id:mId, name:mId};
+    const rate = lookupRate(matchedRecord, mId);
+    resultList.push({ name: mObj.name, rate });
+  }  
+  const displayList = resultList
+    .sort((a,b)=>(b.rate||0)-(a.rate||0))
+    .map(x => `${x.name}: ${x.rate != null ? x.rate + '%' : '-'}`);
+
+  resultDiv.classList.remove("hidden");
+  resultDiv.innerHTML = `<strong>${matchedName}</strong><br><br>` + displayList.join("<br>");
+  //resultDiv.innerHTML = `<strong>${matchedRecord["店舗名"] || matchedRecord["name"] || "該当店舗"}</strong><br><br>` + lines.join("<br>");
+}
+
+// initialize: load CSV in background and render defaults
+loadData().then(()=> console.log("Initial CSV load attempted"));
+renderMethodList();
+
+function toH(str){
+  return str.normalize("NFKC")
+    .replace(/[ァ-ン]/g, s=>String.fromCharCode(s.charCodeAt(0)-0x60))
+    .replace(/[^ぁ-ん]/g,"");
+}
+function similarity(a,b){
+  let m=0;
+  for(let i=0;i<Math.min(a.length,b.length);i++) if(a[i]===b[i]) m++;
+  return m / Math.max(a.length,b.length,1);
+}
+
+const suggestList = document.getElementById("suggestList");
+const storeInput = document.getElementById("storeInput");
+
+storeInput.addEventListener("input", () => {
+  const v = storeInput.value.trim();
+  if (!v || storeData.length===0) { suggestList.classList.add("hidden"); return; }
+
+  const vh = toH(v);
+  let scored = storeData
+    .map(r => r["店舗名"] || "")
+    .filter(n => n)
+    .map(n => [n, similarity(vh, toH(n))])
+    .filter(([name, score]) => score >= 0.3)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,10);
+
+  if (scored.length === 0) { suggestList.classList.add("hidden"); return; }
+
+  suggestList.innerHTML = scored.map(s=>`<div>${s[0]}</div>`).join("");
+  suggestList.classList.remove("hidden");
+});
+
+suggestList.addEventListener("click", (e)=>{
+  if(e.target.tagName === "DIV"){
+    storeInput.value = e.target.textContent;
+    suggestList.classList.add("hidden");
+  }
+});

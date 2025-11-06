@@ -1,0 +1,15 @@
+{
+  "name": "SmartPay",
+  "short_name": "SmartPay",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "./A_digital_graphic_design_of_the_SmartPay_app_icon_.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

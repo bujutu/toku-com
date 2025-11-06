@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./A_digital_graphic_design_of_the_SmartPay_app_icon_.png" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartPay</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Helvetica Neue", Arial; margin: 0; background: #f7f7f7; color:#111; }
+    header { background: #1366d6; color: white; padding: 16px; text-align: center; font-size: 20px; }
+    .container { padding: 16px; max-width: 720px; margin: 0 auto; }
+    input, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+    button { background: #1366d6; color: white; border: none; cursor: pointer; }
+    button.secondary { background:#666; }
+    .result { margin-top: 20px; background: white; padding: 12px; border-radius: 8px; min-height:40px; }
+    .hidden { display: none; }
+    .method-list label {
+      display: flex;
+      align-items: center;
+      background: white;
+      padding: 10px 8px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    /* チェックボックスは絶対に横幅を取らない */
+    .method-list input[type="checkbox"] {
+      flex-shrink: 0;
+      margin-right: 10px;
+      width: auto;      /* ← これが重要 */
+      min-width: 20px;  /* ← スマホで潰れないように固定 */
+      height: 20px;
+    }
+    
+    /* 名前は「中央の伸びる領域」にする */
+    .method-list .name {
+      flex: 1;
+      text-align: left;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+    
+    /* 還元率表示は右に固定 */
+    .method-list .rate {
+      flex-shrink: 0;
+      margin-left: 10px;
+      color: red;
+      font-size: 13px;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+
+
+    .custom-rate { font-weight: 600; margin-left: 8px; color: red; }
+    .controls { display:flex; gap:8px; margin-top:8px; }
+    .controls button { flex:1; }
+    .small { font-size: 13px; padding:8px; }
+    .dialog { background: white; padding:12px; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.12); position: fixed; left:50%; top:50%; transform: translate(-50%,-50%); z-index:1000; width: 90%; max-width: 420px; }
+    .overlay { position:fixed; inset:0; background: rgba(0,0,0,0.35); z-index:900; }
+    #suggestList {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      position: relative;
+      z-index: 100;
+    }
+    #suggestList div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    #suggestList div:hover {
+      background: #eee;
+    }
+
+    footer { text-align:center; padding:12px; font-size:12px; color:#666; }
+  </style>
+</head>
+<body>
+  <header>SmartPay</header>
+
+  <!-- Page 1 -->
+  <div id="page1" class="container">
+    <input id="storeInput" placeholder="店名を入力 (例: セブンイレブン)">
+    <div id="suggestList" class="hidden"></div>
+    <div class="controls">
+      <button id="searchBtn">決定</button>
+      <button id="settingsBtn" class="secondary">設定</button>
+    </div>
+    <div id="result" class="result hidden" role="region" aria-live="polite"></div>
+  </div>
+
+  <!-- Page 2 -->
+  <div id="page2" class="container hidden">
+    <h3>使える決済手段を選択</h3>
+    <div id="methodList" class="method-list" aria-label="決済手段一覧"></div>
+
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button id="showMoreBtn" class="small">詳細を表示</button>
+      <button id="saveBtn" class="small">決定</button>
+    </div>
+  </div>
+
+  <!-- Modal area -->
+  <div id="overlay" class="overlay hidden"></div>
+  <div id="dialog" class="dialog hidden" role="dialog" aria-modal="true">
+    <div id="dialogContent"></div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <input id="dialogInput" placeholder="還元率を数値で入力 (例: 1.5)" />
+      <button id="dialogSave">決定</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button id="dialogReset" class="secondary">デフォルトに戻す</button>
+      <button id="dialogClose" class="secondary">閉じる</button>
+    </div>
+  </div>
+
+  <footer>ローカルで確認するには `python -m http.server 8000` を実行して <code>http://localhost:8000/smartpay_pwa/</code> を開いてください。</footer>
+
+  <script src="./smartpay_app_js.js"></script>
+  <script>
+    // register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(()=> console.log('SW registered'))
+        .catch(e=> console.log('SW reg failed', e));
+    }
+  </script>
+</body>
+</html>

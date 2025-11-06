@@ -12,18 +12,38 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYRcz7Ax_jhyqIqM2IGwZIge9vTJFyop8mPK9VOfGWTgsotACeKiAzkwMreqhgYA/pub?output=csv";
 
 let storeData = []; // array of objects from CSV
-const methods = [
+const methods = [  
+  // Main
   { id: "paypay", name: "PayPay" },
+  { id: "ic_other", name: "交通系IC" },
+  { id: "credit_0.5", name: "クレジットカード0.5%" },
+  { id: "credit_1.0", name: "クレジットカード1%" },
+  
+  // QRコード決済系
+  { id: "d_barai", name: "d払い" },
   { id: "rakuten_pay", name: "楽天Pay" },
+  { id: "au_pay", name: "au PAY" },
+  
+  // 交通系IC系
+  { id: "suica", name: "Suica / モバイルSuica" },
+  { id: "pasmo", name: "PASMO / モバイルPASMO" },
+
+  // 非接触決済（タッチ決済）
   { id: "id", name: "iD" },
   { id: "quicpay", name: "QUICPay" },
+  { id: "visa_touch", name: "Visaのタッチ決済" },
+  { id: "mastercard_touch", name: "Mastercard®タッチ決済" },
+
+  // クレジットカード（ブランド・代表カード例）
+  { id: "rakuten_card", name: "楽天カード" },
   { id: "smbc_card", name: "三井住友カード" },
   { id: "smbc_touch", name: "三井住友カード（スマホタッチ）" },
   { id: "mufg_card", name: "三菱UFJカード" },
+  { id: "jcb_w", name: "JCBカード W" },
   { id: "recruit_card", name: "リクルートカード" },
-  { id: "jcb_w", name: "JCBカードW" },
   { id: "epos_card", name: "EPOSカード" }
 ];
+
 
 const page1 = document.getElementById("page1");
 const page2 = document.getElementById("page2");
@@ -46,8 +66,8 @@ let dialogTarget = null;
 
 // --- storage helpers ---
 function loadSettings() {
-  // default to paypay and smbc_card
-  return JSON.parse(localStorage.getItem("myMethods") || '["paypay","smbc_card"]');
+  // default
+  return JSON.parse(localStorage.getItem("myMethods") || '["paypay","ic_other","credit_0.5","credit_1.0"]');
 }
 function saveSettings(list) {
   localStorage.setItem("myMethods", JSON.stringify(list));
@@ -251,17 +271,33 @@ async function doSearch() {
   // We'll try to map CSV columns to method ids:
   // common CSV column names we look for
   const columnMap = {
-    paypay: ["paypay","PayPay","Paypay"],
-    rakuten_pay: ["楽天Pay","RakutenPay","Rakuten"],
-    id: ["iD","iD(Apple)","id"],
-    quicpay: ["QUICPay","QUICPay","quicpay"],
-    smbc_card: ["三井住友カード","SMBCカード","smbc_card"],
-    smbc_touch: ["Visaタッチ","Mastercardタッチ","smbc_touch"],
-    mufg_card: ["三菱UFJカード","mufg_card"],
-    recruit_card: ["リクルートカード","recruit_card"],
-    jcb_w: ["JCBカードW","jcb_w"],
-    epos_card: ["EPOSカード","epos_card"]
+    //main
+    paypay: ["PayPay", "paypay"],
+    ic_other: ["交通系IC", "ic_other"],
+    credit_0.5: ["クレジットカード0.5%", "credit_0.5"],
+    credit_1.0: ["クレジットカード1%", "credit_1.0"],  
+    // QR
+    d_barai: ["d払い", "d_barai"],
+    rakuten_pay: ["楽天Pay", "RakutenPay", "rakuten_pay"],
+    au_pay: ["au PAY", "au_pay"],  
+    // 交通系
+    suica: ["Suica / モバイルSuica", "Suica", "suica"],
+    pasmo: ["PASMO / モバイルPASMO", "PASMO", "pasmo"],  
+    // タッチ決済
+    id: ["iD", "id"],
+    quicpay: ["QUICPay", "quicpay"],
+    visa_touch: ["Visaのタッチ決済", "Visaタッチ", "visa_touch"],
+    mastercard_touch: ["Mastercard®タッチ決済", "Mastercardタッチ", "mastercard_touch"],  
+    // クレカ
+    rakuten_card: ["楽天カード", "Rakuten Card", "rakuten_card"],
+    smbc_card: ["三井住友カード", "SMBCカード", "smbc_card"],
+    smbc_touch: ["三井住友カード（スマホタッチ）", "SMBCタッチ", "smbc_touch"],
+    mufg_card: ["三菱UFJカード", "mufg_card"],
+    jcb_w: ["JCBカード W", "jcb_w"],
+    recruit_card: ["リクルートカード", "recruit_card"],
+    epos_card: ["EPOSカード", "epos_card"]
   };
+
 
   function lookupRate(record, methodId) {
     // priority: customRates > exact column matches > fallback empty

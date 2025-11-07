@@ -83,7 +83,8 @@ function saveCustomRates(obj) {
 // --- CSV loading ---
 async function loadData() {
   try {
-    const res = await fetch(CSV_URL, {cache: "no-store"});
+    //const res = await fetch(CSV_URL, {cache: "no-store"});
+    const res = await fetch(`your.csv?t=${Date.now()}`);
     const text = await res.text();
     const rows = text.trim().split("\n").map(r => r.split(","));
     const headers = rows.shift().map(h => h.replace(/\r/g,"").trim());
@@ -391,5 +392,41 @@ suggestList.addEventListener("click", (e)=>{
   if(e.target.tagName === "DIV"){
     storeInput.value = e.target.textContent;
     suggestList.classList.add("hidden");
+  }
+});
+
+document.getElementById("clearCacheBtn").addEventListener("click", async () => {
+  const status = document.getElementById("clearStatus");
+  status.textContent = "キャッシュ削除中…";
+
+  try {
+    // 1) Service Worker の解除
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        await reg.unregister();
+      }
+    }
+
+    // 2) Caches API の削除（HTML/JS/CSS/CSV などブラウザが保持したもの）
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      for (const cacheName of cacheNames) {
+        await caches.delete(cacheName);
+      }
+    }
+
+    // 3) localStorage 内のユーザー設定を残して不要データのみ削除
+    //   例: 「userSettings」「customRates」などは残す
+    const keepKeys = ["customRates","myMethods"];
+    Object.keys(localStorage).forEach(key => {
+      if (!keepKeys.includes(key)) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    status.textContent = "キャッシュを削除しました！画面を再読み込みしてください。";
+  } catch (e) {
+    status.textContent = "エラーが発生しました: " + e;
   }
 });

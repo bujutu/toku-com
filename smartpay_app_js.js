@@ -41,7 +41,8 @@ const methods = [
   { id: "mufg_card", name: "三菱UFJカード" },
   { id: "jcb_w", name: "JCBカード W" },
   { id: "recruit_card", name: "リクルートカード" },
-  { id: "epos_card", name: "EPOSカード" }
+  { id: "epos_card", name: "EPOSカード" },
+  { id: "amex", name: "AMEXカード" }
 ];
 
 
@@ -295,7 +296,8 @@ async function doSearch() {
     mufg_card: ["三菱UFJカード", "mufg_card"],
     jcb_w: ["JCBカード W", "jcb_w"],
     recruit_card: ["リクルートカード", "recruit_card"],
-    epos_card: ["EPOSカード", "epos_card"]
+    epos_card: ["EPOSカード", "epos_card"],
+    amex: ["AMEX", "amex", "Amex", "アメックス"]
   };
 
 

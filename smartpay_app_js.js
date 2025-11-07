@@ -83,8 +83,8 @@ function saveCustomRates(obj) {
 // --- CSV loading ---
 async function loadData() {
   try {
-    //const res = await fetch(CSV_URL, {cache: "no-store"});
-    const res = await fetch(`${CSV_URL}&t=${Date.now()}`);
+    const res = await fetch(CSV_URL, {cache: "no-store"});
+    //const res = await fetch(`${CSV_URL}&t=${Date.now()}`);
     const text = await res.text();
     const rows = text.trim().split("\n").map(r => r.split(","));
     const headers = rows.shift().map(h => h.replace(/\r/g,"").trim());

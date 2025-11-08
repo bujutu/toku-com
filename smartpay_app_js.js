@@ -109,11 +109,11 @@ function renderMethodList() {
     const cr = customRates[m.id];
     const crHtml = cr != null ? `<span class="custom-rate">${cr}%</span>` : "";
     return `
-      <label data-id="${m.id}">
+      <div class="method-row" data-id="${m.id}">
         <input type="checkbox" value="${m.id}" ${checked}>
-        <span class="name">${m.name}</span>
-        ${cr != null ? `<span class="rate">(${cr}% 設定中)</span>` : `<span class="rate"></span>`}
-      </label>
+        <span class="name" data-open>${m.name}</span>
+        ${cr != null ? `<span class="rate" data-open>(${cr}% 設定中)</span>` : `<span class="rate" data-open></span>`}
+      </div>
     `;
 
 
@@ -123,16 +123,17 @@ function renderMethodList() {
 
 // click delegation for methodList to open dialog when label is clicked
 methodList.addEventListener("click", (e) => {
-  const label = e.target.closest("label");
-  if (!label) return;
-  const id = label.dataset.id;
-  // if the click target was the checkbox, just toggle selection and return
-  if (e.target.tagName.toLowerCase() === "input") {
-    // nothing else here
-    return;
+  // チェックボックスなら通常動作
+  if (e.target.tagName.toLowerCase() === "input") return;
+
+  // 名前部分 or rate 部分なら dialog を開く
+  if (e.target.dataset.open !== undefined) {
+    const row = e.target.closest(".method-row");
+    if (!row) return;
+    openDialogFor(row.dataset.id);
   }
-  openDialogFor(id);
 });
+
 
 // open dialog
 function openDialogFor(id) {

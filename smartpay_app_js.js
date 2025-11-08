@@ -103,7 +103,7 @@ async function loadData() {
 function renderMethodList() {
   const my = loadSettings();
   methodList.innerHTML = methods.map((m, index) => {
-    const hidden = (!showAll && index >= 5) ? "class='hidden-option'" : "";
+    const hidden = (!showAll && index >= 5) ? "class='hidden'" : "";
     const checked = my.includes(m.id) ? "checked" : "";
     const customRates = loadCustomRates();
     const cr = customRates[m.id];

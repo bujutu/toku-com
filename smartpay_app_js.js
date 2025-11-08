@@ -107,7 +107,7 @@ async function loadData() {
 function renderMethodList() {
   const my = loadSettings();
   const display = showAll ? methods : methods.slice(0,5);
-  const bottom_selected my.filter(id => elseIds.includes(id));
+  const bottom_selected = my.filter(id => elseIds.includes(id));
   methodList.innerHTML = display.map(m => {
     const checked = (temp_top == null)
       ? (my.includes(m.id) ? "checked" : "")

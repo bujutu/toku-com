@@ -44,6 +44,8 @@ const methods = [
   { id: "epos_card", name: "EPOSカード" },
   { id: "amex", name: "AMEXカード" }
 ];
+const firstFiveIds = methods.slice(0, 5).map(m => m.id);
+const elseIds = methods.slice(5).map(m => m.id);
 
 
 const page1 = document.getElementById("page1");
@@ -105,10 +107,13 @@ async function loadData() {
 function renderMethodList() {
   const my = loadSettings();
   const display = showAll ? methods : methods.slice(0,5);
+  const bottom_selected my.filter(id => elseIds.includes(id));
   methodList.innerHTML = display.map(m => {
     const checked = (temp_top == null)
       ? (my.includes(m.id) ? "checked" : "")
-      : (temp_top.includes(m.id) || temp_bottom.includes(m.id) ? "checked" : "");
+      :((temp_bottom == null) 
+        ? (temp_top.includes(m.id) || bottom_selected.includes(m.id) ? "checked" : "") 
+        : (temp_top.includes(m.id) || temp_bottom.includes(m.id) ? "checked" : ""));
     const customRates = loadCustomRates();
     const cr = customRates[m.id];
     const crHtml = cr != null ? `<span class="custom-rate">${cr}%</span>` : "";
@@ -202,8 +207,6 @@ showMoreBtn.addEventListener("click", ()=> {
   } else {
     // 「簡略表示」： 5件に戻す
     const selected = [...document.querySelectorAll("#methodList input:checked")].map(i => i.value);
-    const firstFiveIds = methods.slice(0, 5).map(m => m.id);
-    const elseIds = methods.slice(5).map(m => m.id);
     temp_top = selected.filter(id => firstFiveIds.includes(id));
     temp_bottom = selected.filter(id => elseIds.includes(id));
     showAll = false;

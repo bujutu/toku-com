@@ -1,13 +1,13 @@
 {
-  "name": "SmartPay",
-  "short_name": "SmartPay",
+  "name": "お得コンパス",
+  "short_name": "得コン",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "./A_digital_graphic_design_of_the_SmartPay_app_icon_.png",
+      "src": "./logo.PNG",
       "sizes": "512x512",
       "type": "image/png"
     }

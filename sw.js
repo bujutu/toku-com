@@ -1,11 +1,11 @@
 
-const CACHE_NAME = 'smartpay-cache-v1';
+const CACHE_NAME = 'toku-com-cache-v1';
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
   './smartpay_app_js.js',
-  './A_digital_graphic_design_of_the_SmartPay_app_icon_.png'
+  './logo.PNG'
 ];
 /*
 self.addEventListener('install', event => {

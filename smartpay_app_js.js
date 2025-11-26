@@ -345,28 +345,40 @@ async function doSearch() {
 
 
   function lookupRate(record, methodId) {
-    // priority: customRates > exact column matches > fallback empty
-    if (customRates[methodId] != null) return customRates[methodId];
+    const custom = customRates[methodId];
     const names = columnMap[methodId] || [];
-    for (const nm of names) {
-      for (const key of Object.keys(record)) {
-        if (key.trim().toLowerCase() === nm.trim().toLowerCase()) {
-          const v = record[key];
-          if (v && v.match(/[\d.]+/)) return parseFloat(v);
-        }
-      }
-    }
-    // try to find key that includes method name
-    for (const key of Object.keys(record)) {
+    function getCsvValue(){
       for (const nm of names) {
-        if (key.toLowerCase().includes(nm.toLowerCase())) {
-          const v = record[key];
-          if (v && v.match(/[\d.]+/)) return parseFloat(v);
+        for (const key of Object.keys(record)) {
+          if (key.trim().toLowerCase() === nm.trim().toLowerCase()) {
+            const v = record[key];
+            if (v && v.match(/[\d.]+/)) return parseFloat(v);
+          }
         }
       }
+      // try to find key that includes method name
+      for (const key of Object.keys(record)) {
+        for (const nm of names) {
+          if (key.toLowerCase().includes(nm.toLowerCase())) {
+            const v = record[key];
+            if (v && v.match(/[\d.]+/)) return parseFloat(v);
+          }
+        }
+      }
+      return null;
     }
-    return null;
+    const csvValue = getCsvValue();
+    
+    if (custom == null) return csvValue;
+    if (csvValue == null) {
+      return null;
+    }
+    if (csvValue === 0) {
+      return 0;
+    }
+    return custom;
   }
+    
 
   // compile results: for each selected or available method show rate
   const lines = [];

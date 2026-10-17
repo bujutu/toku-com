@@ -12,13 +12,15 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYRcz7Ax_jhyqIqM2IGwZIge9vTJFyop8mPK9VOfGWTgsotACeKiAzkwMreqhgYA/pub?output=csv";
 
 let storeData = []; // array of objects from CSV
-const methods = [  
-  // Main
-  { id: "paypay", name: "PayPay" },
-  { id: "ic_other", name: "交通系IC" },
-  { id: "credit_0.5", name: "クレジットカード0.5%" },
+const methods = [
+  // Main（デフォルトで選択され、簡略表示で先頭6件として表示される）
+  { id: "smbc_touch", name: "三井住友カード（スマホタッチ）" },
+  { id: "mufg_card", name: "三菱UFJカード" },
+  { id: "jcb_w", name: "JCBカード W" },
   { id: "credit_1.0", name: "クレジットカード1%" },
-  
+  { id: "ic_other", name: "交通系IC" },
+  { id: "paypay", name: "PayPay" },
+
   // QRコード決済系
   { id: "d_barai", name: "d払い" },
   { id: "rakuten_pay", name: "楽天Pay" },
@@ -35,17 +37,16 @@ const methods = [
   { id: "mastercard_touch", name: "Mastercard®タッチ決済" },
 
   // クレジットカード（ブランド・代表カード例）
+  { id: "credit_0.5", name: "クレジットカード0.5%" },
   { id: "rakuten_card", name: "楽天カード" },
   { id: "smbc_card", name: "三井住友カード" },
-  { id: "smbc_touch", name: "三井住友カード（スマホタッチ）" },
-  { id: "mufg_card", name: "三菱UFJカード" },
-  { id: "jcb_w", name: "JCBカード W" },
   { id: "recruit_card", name: "リクルートカード" },
   { id: "epos_card", name: "EPOSカード" },
   { id: "amex", name: "AMEXカード" }
 ];
-const firstFiveIds = methods.slice(0, 5).map(m => m.id);
-const elseIds = methods.slice(5).map(m => m.id);
+const DEFAULT_COUNT = 6;
+const topIds = methods.slice(0, DEFAULT_COUNT).map(m => m.id);
+const elseIds = methods.slice(DEFAULT_COUNT).map(m => m.id);
 
 
 const page1 = document.getElementById("page1");
@@ -72,7 +73,7 @@ let temp_bottom = null
 // --- storage helpers ---
 function loadSettings() {
   // default
-  return JSON.parse(localStorage.getItem("myMethods") || '["paypay","ic_other","credit_0.5","smbc_touch","mufg_card"]');
+  return JSON.parse(localStorage.getItem("myMethods") || '["smbc_touch","mufg_card","jcb_w","credit_1.0","ic_other","paypay"]');
 }
 function saveSettings(list) {
   localStorage.setItem("myMethods", JSON.stringify(list));
@@ -84,14 +85,49 @@ function saveCustomRates(obj) {
   localStorage.setItem("customRates", JSON.stringify(obj));
 }
 
+// --- HTML escape ---
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+// --- CSV parser (supports quoted fields containing commas, quotes and newlines) ---
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      row.push(field); field = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = "";
+      rows.push(row); row = [];
+    } else {
+      field += c;
+    }
+  }
+  if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(v => v.trim() !== ""));
+}
+
 // --- CSV loading ---
 async function loadData() {
   try {
     const res = await fetch(CSV_URL, {cache: "no-store"});
-    //const res = await fetch(`${CSV_URL}&t=${Date.now()}`);
     const text = await res.text();
-    const rows = text.trim().split("\n").map(r => r.split(","));
-    const headers = rows.shift().map(h => h.replace(/\r/g,"").trim());
+    const rows = parseCSV(text.replace(/^﻿/, ""));
+    const headers = rows.shift().map(h => h.trim());
     storeData = rows.map(r => {
       const obj = {};
       r.forEach((v,i)=> obj[headers[i]] = (v||"").trim());
@@ -106,7 +142,7 @@ async function loadData() {
 // --- rendering methods list (page2) ---
 function renderMethodList() {
   const my = loadSettings();
-  const display = showAll ? methods : methods.slice(0,5);
+  const display = showAll ? methods : methods.slice(0,DEFAULT_COUNT);
   const bottom_selected = my.filter(id => elseIds.includes(id));
   methodList.innerHTML = display.map(m => {
     const checked = (temp_top == null)
@@ -147,13 +183,13 @@ methodList.addEventListener("click", (e) => {
 function temporarySave(){
   if (!showAll) {
     // 「詳細を表示」： 全表示に切り替える
-    // 簡略表示中 → （先頭5件 + temp）に戻す
+    // 簡略表示中 → （先頭6件 + temp）に戻す
     temp_top = [...document.querySelectorAll("#methodList input:checked")].map(i => i.value);
   } else {
     // 「簡略表示」： 5件に戻す
     // 詳細表示中→簡略表示へ
     const selected = [...document.querySelectorAll("#methodList input:checked")].map(i => i.value);
-    temp_top = selected.filter(id => firstFiveIds.includes(id));
+    temp_top = selected.filter(id => topIds.includes(id));
     temp_bottom = selected.filter(id => elseIds.includes(id));
   }
 }
@@ -381,15 +417,9 @@ async function doSearch() {
     
 
   // compile results: for each selected or available method show rate
-  const lines = [];
   // 店舗名を取得して matchedName に代入
   const matchedName = matchedRecord["店舗名"] || matchedRecord["name"] || "該当店舗";
   const methodsToShow = my.length ? my : methods.map(m=>m.id);
-  for (const mId of methodsToShow) {
-    const mObj = methods.find(x=>x.id===mId) || {id:mId, name:mId};
-    const rate = lookupRate(matchedRecord, mId);
-    lines.push(`${mObj.name}: ${rate != null ? rate + '%' : '-'}`);
-  }
   const resultList = [];
   for (const mId of methodsToShow) {
     const mObj = methods.find(x=>x.id===mId) || {id:mId, name:mId};
@@ -398,27 +428,15 @@ async function doSearch() {
   }  
   const displayList = resultList
     .sort((a,b)=>(b.rate||0)-(a.rate||0))
-    .map(x => `${x.name}: ${x.rate != null ? x.rate + '%' : '-'}`);
+    .map(x => `${escapeHtml(x.name)}: ${x.rate != null ? x.rate + '%' : '-'}`);
 
   resultDiv.classList.remove("hidden");
-  resultDiv.innerHTML = `<strong>${matchedName}</strong><br><br>` + displayList.join("<br>");
-  //resultDiv.innerHTML = `<strong>${matchedRecord["店舗名"] || matchedRecord["name"] || "該当店舗"}</strong><br><br>` + lines.join("<br>");
+  resultDiv.innerHTML = `<strong>${escapeHtml(matchedName)}</strong><br><br>` + displayList.join("<br>");
 }
 
 // initialize: load CSV in background and render defaults
 loadData().then(()=> console.log("Initial CSV load attempted"));
 renderMethodList();
-
-function toH(str){
-  return str.normalize("NFKC")
-    .replace(/[ァ-ン]/g, s=>String.fromCharCode(s.charCodeAt(0)-0x60))
-    .replace(/[^ぁ-ん]/g,"");
-}
-function similarity(a,b){
-  let m=0;
-  for(let i=0;i<Math.min(a.length,b.length);i++) if(a[i]===b[i]) m++;
-  return m / Math.max(a.length,b.length,1);
-}
 
 const suggestList = document.getElementById("suggestList");
 const storeInput = document.getElementById("storeInput");
@@ -427,18 +445,18 @@ storeInput.addEventListener("input", () => {
   const v = storeInput.value.trim();
   if (!v || storeData.length===0) { suggestList.classList.add("hidden"); return; }
 
-  const vh = toH(v);
+  const vh = toHiragana(v);
   let scored = storeData
     .map(r => r["店舗名"] || "")
     .filter(n => n)
-    .map(n => [n, similarity(vh, toH(n))])
+    .map(n => [n, similarity(vh, toHiragana(n))])
     .filter(([name, score]) => score >= 0.3)
     .sort((a,b)=>b[1]-a[1])
     .slice(0,10);
 
   if (scored.length === 0) { suggestList.classList.add("hidden"); return; }
 
-  suggestList.innerHTML = scored.map(s=>`<div>${s[0]}</div>`).join("");
+  suggestList.innerHTML = scored.map(s=>`<div>${escapeHtml(s[0])}</div>`).join("");
   suggestList.classList.remove("hidden");
 });
 

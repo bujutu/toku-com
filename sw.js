@@ -1,29 +1,9 @@
-
-const CACHE_NAME = 'toku-com-cache-v1';
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './smartpay_app_js.js',
-  './logo.PNG'
-];
-/*
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
-});
-*/
-self.addEventListener("install", event => {
+// 事前キャッシュは行わず、ブラウザ側で取得済みのキャッシュがあればそれを返す
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 self.addEventListener("activate", event => {
-  clients.claim();
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', event => {

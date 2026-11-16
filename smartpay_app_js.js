@@ -170,6 +170,7 @@ function parseCSV(text) {
 // 取得に成功したCSVは localStorage に保存し、オフラインや取得失敗のときはそれを使う。
 const DATA_CACHE_KEYS = { stores: "cache_storeCsv", campaigns: "cache_campaignCsv" };
 let offlineDataDate = null; // 保存済みデータで動いているとき、その取得日時(ms)。最新データなら null。
+let lastFreshAt = 0;        // 最新の店舗データを最後に取得できた時刻(ms)
 
 // 戻り値: { text, savedAt }  savedAt は最新を取得できたら null、保存済みを使ったら取得日時(ms)
 async function fetchCsv(url, cacheKey, requiredHeader) {
@@ -210,6 +211,7 @@ async function loadData() {
     // 店舗名のない行（区切り行など）は除外
     storeData = csvToObjects(text).filter(o => (o["店舗名"] || o["name"] || "") !== "");
     offlineDataDate = savedAt;
+    if (!savedAt) lastFreshAt = Date.now();
     buildSearchIndex();
     console.log("CSV loaded, rows:", storeData.length, savedAt ? "(saved copy)" : "");
   } catch (e) {
@@ -235,8 +237,21 @@ async function loadCampaigns() {
   }
 }
 
+function refreshData() {
+  return Promise.all([loadData(), loadCampaigns()]);
+}
+
 // 通信が復帰したら最新データを取り直す
-window.addEventListener("online", () => { loadData(); loadCampaigns(); });
+window.addEventListener("online", refreshData);
+
+// アプリを開きっぱなしにしていても古い還元率を出し続けないよう、
+// 前面に戻ったとき、最後に最新データを取得してから一定時間たっていれば取り直す
+const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && Date.now() - lastFreshAt > REFRESH_INTERVAL_MS) {
+    refreshData();
+  }
+});
 
 function normalizeText(s) {
   return String(s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, "");
@@ -667,7 +682,11 @@ document.getElementById("clearCacheBtn").addEventListener("click", async () => {
       }
     });
 
-    status.textContent = "キャッシュを削除しました！画面を再読み込みしてください。";
+    // 4) 還元率データをスプレッドシートから取り直す
+    await refreshData();
+    status.textContent = offlineDataDate
+      ? "アプリは更新しましたが、還元率データを取得できませんでした。通信環境を確認してください。"
+      : "アプリと還元率データを更新しました！画面を再読み込みしてください。";
   } catch (e) {
     status.textContent = "エラーが発生しました: " + e;
   }

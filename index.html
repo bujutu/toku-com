@@ -12,7 +12,8 @@
   </script>
   <meta charset="UTF-8" />
   <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="./logo.PNG" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8868204174419750"
@@ -68,6 +69,7 @@
 
 
 
+    .campaign { display: inline-block; background: #fff3cd; color: #8a5a00; font-size: 12px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
     .custom-rate { font-weight: 600; margin-left: 8px; color: red; }
     .controls { display:flex; gap:8px; margin-top:8px; }
     .controls button { flex:1; }
@@ -135,7 +137,7 @@
   <div id="dialog" class="dialog hidden" role="dialog" aria-modal="true">
     <div id="dialogContent"></div>
     <div style="display:flex; gap:8px; margin-top:12px;">
-      <input id="dialogInput" placeholder="還元率を数値で入力 (例: 1.5)" />
+      <input id="dialogInput" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="還元率を数値で入力 (例: 1.5)" />
       <button id="dialogSave">決定</button>
     </div>
     <div style="display:flex; gap:8px; margin-top:8px;">

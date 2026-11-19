@@ -1,0 +1,18 @@
+---
+layout: article
+title: 記事一覧
+description: キャッシュレス決済の還元率や、お店ごとのお得な払い方を解説した記事の一覧です。
+---
+<div class="list">
+  <h1>記事一覧</h1>
+  <p>キャッシュレス決済の還元率や、お店ごとのお得な払い方を、トクコムのデータと実際に使った経験をもとに解説しています。</p>
+  {% if site.posts.size > 0 %}
+  <ul>
+    {% for post in site.posts %}
+    <li><a href="{{ post.url }}">{{ post.title }}</a>（{{ post.date | date: "%Y年%-m月%-d日" }}）</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>記事は準備中です。</p>
+  {% endif %}
+</div>

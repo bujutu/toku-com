@@ -9,6 +9,9 @@ lang: ja
 timezone: Asia/Tokyo
 
 markdown: kramdown
+# 記事中の {% include toc.html %} で目次を出すため（HTMLブロック内の markdown を処理する）
+kramdown:
+  parse_block_html: true
 permalink: /articles/:title/
 
 plugins:

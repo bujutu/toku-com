@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-VXVWSQGHXH"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-VXVWSQGHXH');
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8868204174419750"
+     crossorigin="anonymous"></script>
+  <title>{% if page.title %}{{ page.title | escape }}｜{% endif %}{{ site.title }}</title>
+  {% assign desc = page.description | default: page.excerpt | default: site.description | strip_html | strip_newlines | truncate: 120 %}
+  <meta name="description" content="{{ desc | escape }}" />
+  <link rel="canonical" href="{{ page.url | absolute_url }}" />
+  <meta property="og:type" content="{% if page.date %}article{% else %}website{% endif %}" />
+  <meta property="og:title" content="{{ page.title | default: site.title | escape }}" />
+  <meta property="og:description" content="{{ desc | escape }}" />
+  <meta property="og:url" content="{{ page.url | absolute_url }}" />
+  <meta property="og:site_name" content="{{ site.title }}" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  {% if page.date %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": {{ page.title | jsonify }},
+    "datePublished": "{{ page.date | date_to_xmlschema }}",
+    "dateModified": "{{ page.updated | default: page.date | date_to_xmlschema }}",
+    "author": { "@type": "Person", "name": "bujutu" },
+    "publisher": { "@type": "Organization", "name": {{ site.title | jsonify }} }
+  }
+  </script>
+  {% endif %}
+  <style>
+    body { font-family: system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; margin: 0; background: #f7f7f7; color: #111; line-height: 1.8; }
+    header { background: #1366d6; color: white; padding: 16px; text-align: center; font-size: 20px; }
+    header a { color: white; text-decoration: none; }
+    main { max-width: 720px; margin: 0 auto; padding: 16px; }
+    article, .list { background: white; padding: 16px 20px; border-radius: 8px; }
+    .breadcrumb { font-size: 13px; color: #666; margin-bottom: 8px; }
+    .breadcrumb a { color: #1366d6; }
+    h1 { font-size: 24px; line-height: 1.4; margin: 0 0 8px; }
+    h2 { font-size: 20px; border-left: 4px solid #1366d6; padding-left: 8px; margin-top: 32px; }
+    h3 { font-size: 17px; margin-top: 24px; }
+    .meta { font-size: 13px; color: #666; margin-bottom: 16px; }
+    table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+    th { background: #eef4fd; }
+    img { max-width: 100%; height: auto; }
+    blockquote { margin: 16px 0; padding: 8px 12px; background: #f5f5f5; border-left: 4px solid #ccc; }
+    .cta { display: block; text-align: center; background: #1366d6; color: white; padding: 12px; border-radius: 8px; text-decoration: none; margin: 24px 0; }
+    .note { font-size: 13px; color: #555; border-top: 1px solid #eee; margin-top: 32px; padding-top: 12px; }
+    .footer { text-align: center; background: #f5f5f5; padding: 12px 0; border-top: 1px solid #ddd; font-size: 14px; margin-top: 24px; }
+    .footer a { margin: 0 6px; }
+  </style>
+</head>
+<body>
+  <header><a href="/">お得コンパス</a></header>
+  <main>
+    {% if page.date %}
+    <nav class="breadcrumb"><a href="/">トップ</a> › <a href="/articles/">記事一覧</a></nav>
+    <article>
+      <h1>{{ page.title }}</h1>
+      <div class="meta">
+        公開日 <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%Y年%-m月%-d日" }}</time>
+        {% if page.updated %}・更新日 <time datetime="{{ page.updated | date_to_xmlschema }}">{{ page.updated | date: "%Y年%-m月%-d日" }}</time>{% endif %}
+        ・執筆 bujutu
+      </div>
+      {{ content }}
+      <a class="cta" href="/">お店ごとに一番お得な払い方をトクコムで調べる</a>
+      <p class="note">還元率やキャンペーンは変わることがあります。最新の条件は各事業者の公式サイトでご確認ください。</p>
+    </article>
+    {% else %}
+    {{ content }}
+    {% endif %}
+  </main>
+  <footer class="footer">
+    <a href="/">トップ</a>|
+    <a href="/articles/">記事一覧</a>|
+    <a href="/how-to.html">使い方</a>|
+    <a href="/privacypolicy.html">プライバシーポリシー</a>|
+    <a href="/contact.html">お問い合わせ</a>
+  </footer>
+</body>
+</html>

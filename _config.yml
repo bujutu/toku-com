@@ -1,0 +1,25 @@
+# tokucom.jp（お得コンパス）の Jekyll 設定
+# アプリ本体（index.html など front matter のないファイル）はそのまま配信される。
+# 記事は _posts/ に置くと /articles/<slug>/ で公開される。
+title: お得コンパス
+description: お店ごとに一番お得なキャッシュレス決済がわかるアプリと、支払い方の解説記事
+url: https://tokucom.jp
+baseurl: ""
+lang: ja
+timezone: Asia/Tokyo
+
+markdown: kramdown
+permalink: /articles/:title/
+
+plugins:
+  - jekyll-sitemap
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: article
+
+exclude:
+  - README.md

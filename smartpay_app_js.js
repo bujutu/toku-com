@@ -513,6 +513,28 @@ function searchStores(input, minScore) {
     .sort((a, b) => b.score - a.score);
 }
 
+// --- 現金のみの店舗 ---
+// シートに「現金のみ」列を作り、現金しか使えない店舗の行に ○ を入れる（空欄 = キャッシュレス可）。
+// ○ / ◯ / 〇 / はい / TRUE / 1 などを「現金のみ」とみなす。
+const CASH_ONLY_COLUMN = "現金のみ";
+function isCashOnly(record) {
+  const v = normalizeText(record[CASH_ONLY_COLUMN]);
+  return ["○", "◯", "〇", "はい", "yes", "true", "1", "✓", "✔"].includes(v);
+}
+
+// 検索結果の上に出す注意書き（保存済みデータ表示中・あいまい一致）
+function noticeHtml(input, isFuzzyMatch) {
+  let html = "";
+  if (offlineDataDate) {
+    const d = new Date(offlineDataDate);
+    html += `<div style="font-size:13px; color:#8a5a00; margin-bottom:6px;">最新データを取得できないため、${d.getMonth() + 1}/${d.getDate()} 時点のデータを表示しています</div>`;
+  }
+  if (isFuzzyMatch) {
+    html += `<div style="font-size:13px; color:#8a5a00; margin-bottom:6px;">「${escapeHtml(input)}」に近い店舗を表示しています</div>`;
+  }
+  return html;
+}
+
 // --- search handling ---
 searchBtn.addEventListener("click", () => doSearch());
 
@@ -542,6 +564,16 @@ async function doSearch() {
     resultDiv.innerHTML = storeData.length === 0
       ? "還元率データを読み込めませんでした。通信環境を確認して、もう一度お試しください。"
       : "一致する店舗が見つかりませんでした（店名を確認してください）";
+    return;
+  }
+
+  // 現金のみの店舗はランキングを出さない
+  if (isCashOnly(matchedRecord)) {
+    const name = matchedRecord["店舗名"] || matchedRecord["name"] || "該当店舗";
+    resultDiv.classList.remove("hidden");
+    resultDiv.innerHTML = noticeHtml(input, isFuzzyMatch) + `<strong>${escapeHtml(name)}</strong><br><br>`
+      + `<div class="cash-only">現金のみ</div>`
+      + `<div style="font-size:13px; color:#555; margin-top:6px;">この店舗ではキャッシュレス決済が使えません。</div>`;
     return;
   }
 
@@ -608,15 +640,7 @@ async function doSearch() {
             + (x.camp ? ` ${campaignLabel(x.camp, today)}` : ""));
 
   resultDiv.classList.remove("hidden");
-  const fuzzyNote = isFuzzyMatch
-    ? `<div style="font-size:13px; color:#8a5a00; margin-bottom:6px;">「${escapeHtml(input)}」に近い店舗を表示しています</div>`
-    : "";
-  let offlineNote = "";
-  if (offlineDataDate) {
-    const d = new Date(offlineDataDate);
-    offlineNote = `<div style="font-size:13px; color:#8a5a00; margin-bottom:6px;">最新データを取得できないため、${d.getMonth() + 1}/${d.getDate()} 時点のデータを表示しています</div>`;
-  }
-  resultDiv.innerHTML = offlineNote + fuzzyNote + `<strong>${escapeHtml(matchedName)}</strong><br><br>` + displayList.join("<br>");
+  resultDiv.innerHTML = noticeHtml(input, isFuzzyMatch) + `<strong>${escapeHtml(matchedName)}</strong><br><br>` + displayList.join("<br>");
 }
 
 // initialize: load CSV in background and render defaults

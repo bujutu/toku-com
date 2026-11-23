@@ -21,18 +21,18 @@ const methods = [
   { id: "smbc_touch", name: "三井住友カード（スマホタッチ）" },
   { id: "mufg_card", name: "三菱UFJカード" },
   { id: "jcb_w", name: "JCBカード W" },
-  { id: "credit_1.0", name: "クレジットカード1%" },
+  { id: "credit_1.0", name: "クレカ（1%）" },
   { id: "ic_other", name: "交通系IC" },
   { id: "paypay", name: "PayPay" },
 
   // QRコード決済系
   { id: "d_barai", name: "d払い" },
-  { id: "rakuten_pay", name: "楽天Pay" },
+  { id: "rakuten_pay", name: "楽天ペイ" },
   { id: "au_pay", name: "au PAY" },
   
   // 交通系IC系
-  { id: "suica", name: "Suica / モバイルSuica" },
-  { id: "pasmo", name: "PASMO / モバイルPASMO" },
+  { id: "suica", name: "Suica" },
+  { id: "pasmo", name: "PASMO" },
 
   // 非接触決済（タッチ決済）
   { id: "id", name: "iD" },
@@ -41,11 +41,11 @@ const methods = [
   { id: "mastercard_touch", name: "Mastercard®タッチ決済" },
 
   // クレジットカード（ブランド・代表カード例）
-  { id: "credit_0.5", name: "クレジットカード0.5%" },
+  { id: "credit_0.5", name: "クレカ（0.5%）" },
   { id: "rakuten_card", name: "楽天カード" },
   { id: "smbc_card", name: "三井住友カード" },
   { id: "recruit_card", name: "リクルートカード" },
-  { id: "epos_card", name: "EPOSカード" },
+  { id: "epos_card", name: "エポスカード" },
   { id: "amex", name: "AMEXカード" }
 ];
 const DEFAULT_COUNT = 6;
@@ -53,19 +53,21 @@ const topIds = methods.slice(0, DEFAULT_COUNT).map(m => m.id);
 const elseIds = methods.slice(DEFAULT_COUNT).map(m => m.id);
 
 // CSVの列名（決済手段名）と method id の対応
+// 先頭が今の表記。旧表記（2026-11-23 以前のシートの列名）も読めるように残している。
+// 照合は normalizeText で行うので、全角・半角の括弧や％、空白の違いは区別しない。
 const columnMap = {
   //main
   paypay: ["PayPay", "paypay"],
   ic_other: ["交通系IC", "ic_other"],
-  "credit_0.5": ["クレジットカード0.5%", "credit_0.5"],
-  "credit_1.0": ["クレジットカード1%", "credit_1.0"],
+  "credit_0.5": ["クレカ（0.5%）", "クレジットカード0.5%", "credit_0.5"],
+  "credit_1.0": ["クレカ（1%）", "クレジットカード1%", "credit_1.0"],
   // QR
   d_barai: ["d払い", "d_barai"],
-  rakuten_pay: ["楽天Pay", "RakutenPay", "rakuten_pay"],
+  rakuten_pay: ["楽天ペイ", "楽天Pay", "RakutenPay", "rakuten_pay"],
   au_pay: ["au PAY", "au_pay"],
   // 交通系
-  suica: ["Suica / モバイルSuica", "Suica", "suica"],
-  pasmo: ["PASMO / モバイルPASMO", "PASMO", "pasmo"],
+  suica: ["Suica", "Suica / モバイルSuica", "suica"],
+  pasmo: ["PASMO", "PASMO / モバイルPASMO", "pasmo"],
   // タッチ決済
   id: ["iD", "id"],
   quicpay: ["QUICPay", "quicpay"],
@@ -78,7 +80,7 @@ const columnMap = {
   mufg_card: ["三菱UFJカード", "mufg_card"],
   jcb_w: ["JCBカード W", "jcb_w"],
   recruit_card: ["リクルートカード", "recruit_card"],
-  epos_card: ["EPOSカード", "epos_card"],
+  epos_card: ["エポスカード", "EPOSカード", "epos_card"],
   amex: ["AMEX", "amex", "Amex", "アメックス"]
 };
 
@@ -587,7 +589,7 @@ async function doSearch() {
     function getCsvValue(){
       for (const nm of names) {
         for (const key of Object.keys(record)) {
-          if (key.trim().toLowerCase() === nm.trim().toLowerCase()) {
+          if (normalizeText(key) === normalizeText(nm)) {
             const v = record[key];
             if (v && v.match(/[\d.]+/)) return parseFloat(v);
           }
@@ -596,7 +598,7 @@ async function doSearch() {
       // try to find key that includes method name
       for (const key of Object.keys(record)) {
         for (const nm of names) {
-          if (key.toLowerCase().includes(nm.toLowerCase())) {
+          if (normalizeText(key).includes(normalizeText(nm))) {
             const v = record[key];
             if (v && v.match(/[\d.]+/)) return parseFloat(v);
           }

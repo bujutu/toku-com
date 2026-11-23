@@ -84,6 +84,22 @@ const columnMap = {
   amex: ["AMEX", "amex", "Amex", "アメックス"]
 };
 
+// --- おすすめ枠（持っていない高還元カード） ---
+// 検索結果のランキングの下に、「設定で選んでいないが、この店でいま持っている決済手段より還元率が高いカード」を出す。
+// アフィリエイトリンクや解説記事ができたら、下の affiliateUrl / articleUrl に URL を入れるだけで表示される。
+//  methodIds    : 還元率を見る決済手段（methods の id）。どれか1つでも設定で選ばれていれば「持っている」とみなして出さない。
+//  affiliateUrl : 「このカードを作る」のリンク先（アフィリエイト）。空ならボタンを出さない。
+//  articleUrl   : 「解説はこちら」のリンク先（tokucom.jp の記事なら "/articles/<slug>/"）。空ならボタンを出さない。
+//  ※ 両方とも空のカードは表示しない。すべて空のあいだは、おすすめ枠そのものが出ない。
+//  ※ 確認用: URL の末尾に ?recommend_preview=1 を付けると、リンクが空でも枠を表示する（ボタンは仮表示）。
+// クレカ（1%）（0.5%）や交通系IC（Suica/PASMO）は、特定のカードではないのでここに入れない。
+const RECOMMEND_CARDS = [
+  { name: "三井住友カード", methodIds: ["smbc_touch", "smbc_card"], affiliateUrl: "", articleUrl: "" },
+  { name: "三菱UFJカード", methodIds: ["mufg_card"], affiliateUrl: "", articleUrl: "" },
+  { name: "JCBカード W", methodIds: ["jcb_w"], affiliateUrl: "", articleUrl: "" }
+];
+const RECOMMEND_MAX = 3;
+const RECOMMEND_PREVIEW = /[?&]recommend_preview=1\b/.test(location.search);
 
 const page1 = document.getElementById("page1");
 const page2 = document.getElementById("page2");
@@ -625,25 +641,97 @@ async function doSearch() {
   const methodsToShow = my.length ? my : methods.map(m=>m.id);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const resultList = [];
-  for (const mId of methodsToShow) {
-    const mObj = methods.find(x=>x.id===mId) || {id:mId, name:mId};
+  // 決済手段ごとの還元率（有効なキャンペーンの還元率が通常より高い場合はそちらを採用）
+  function effectiveRate(mId) {
     let rate = lookupRate(matchedRecord, mId);
-    // 有効なキャンペーンの還元率が通常より高い場合のみ採用。
     // 通常の還元率が 0 / 未設定（= その店で使えない）決済手段には適用しない。
     const camp = findActiveCampaign(matchedName, mId, today);
     const useCamp = camp && rate > 0 && camp.rate > rate;
     if (useCamp) rate = camp.rate;
-    resultList.push({ name: mObj.name, rate, camp: useCamp ? camp : null });
+    return { rate, camp: useCamp ? camp : null };
+  }
+
+  const resultList = [];
+  for (const mId of methodsToShow) {
+    const mObj = methods.find(x=>x.id===mId) || {id:mId, name:mId};
+    resultList.push({ name: mObj.name, ...effectiveRate(mId) });
   }
   const displayList = resultList
     .sort((a,b)=>(b.rate||0)-(a.rate||0))
     .map(x => `${escapeHtml(x.name)}: ${x.rate != null ? x.rate + '%' : '-'}`
             + (x.camp ? ` ${campaignLabel(x.camp, today)}` : ""));
 
+  const bestHeld = Math.max(0, ...resultList.map(x => x.rate || 0));
+  const recommendHtml = buildRecommendHtml(my, bestHeld, effectiveRate, today);
+
   resultDiv.classList.remove("hidden");
-  resultDiv.innerHTML = noticeHtml(input, isFuzzyMatch) + `<strong>${escapeHtml(matchedName)}</strong><br><br>` + displayList.join("<br>");
+  resultDiv.innerHTML = noticeHtml(input, isFuzzyMatch) + `<strong>${escapeHtml(matchedName)}</strong><br><br>` + displayList.join("<br>")
+    + recommendHtml;
 }
+
+// おすすめ枠の HTML。出すものがなければ空文字。
+//  my         : 設定で選んでいる決済手段の id
+//  bestHeld   : 持っている決済手段の、この店での最高還元率
+//  rateOf(id) : { rate, camp } を返す
+function buildRecommendHtml(my, bestHeld, rateOf, today) {
+  const items = [];
+  for (const card of RECOMMEND_CARDS) {
+    if (card.methodIds.some(id => my.includes(id))) continue;           // 持っている
+    const affiliateUrl = (card.affiliateUrl || "").trim();
+    const articleUrl = (card.articleUrl || "").trim();
+    if (!affiliateUrl && !articleUrl && !RECOMMEND_PREVIEW) continue;  // リンクがまだない
+    // そのカードの決済手段のうち、この店で一番還元率が高いもの
+    let best = null;
+    for (const id of card.methodIds) {
+      const r = rateOf(id);
+      if (r.rate > 0 && (!best || r.rate > best.rate)) best = { id, ...r };
+    }
+    if (!best || best.rate <= bestHeld) continue;                       // 今の手持ちより得でない
+    items.push({ card, best, affiliateUrl, articleUrl });
+  }
+  if (items.length === 0) return "";
+
+  items.sort((a, b) => b.best.rate - a.best.rate);
+  const shown = items.slice(0, RECOMMEND_MAX);
+  const hasAd = shown.some(x => x.affiliateUrl) || RECOMMEND_PREVIEW;
+
+  const rows = shown.map(({ card, best, affiliateUrl, articleUrl }) => {
+    const mObj = methods.find(m => m.id === best.id);
+    const detail = mObj && mObj.name !== card.name ? `<div class="rec-detail">${escapeHtml(mObj.name)}で支払った場合</div>` : "";
+    const links = [];
+    if (affiliateUrl || RECOMMEND_PREVIEW) {
+      links.push(`<a class="rec-btn rec-ad" href="${escapeHtml(affiliateUrl || "#")}" target="_blank" rel="sponsored noopener"`
+        + ` data-rec="affiliate" data-card="${escapeHtml(card.name)}">このカードを作る<span class="rec-pr">PR</span></a>`);
+    }
+    if (articleUrl || RECOMMEND_PREVIEW) {
+      links.push(`<a class="rec-btn rec-article" href="${escapeHtml(articleUrl || "#")}"`
+        + ` data-rec="article" data-card="${escapeHtml(card.name)}">解説はこちら</a>`);
+    }
+    return `<div class="rec-item">`
+      + `<div class="rec-head"><span class="rec-name">${escapeHtml(card.name)}</span>`
+      + `<span class="rec-rate">${best.rate}%</span>`
+      + (best.camp ? ` ${campaignLabel(best.camp, today)}` : "") + `</div>`
+      + detail
+      + `<div class="rec-links">${links.join("")}</div>`
+      + `</div>`;
+  }).join("");
+
+  return `<div class="recommend">`
+    + `<div class="rec-title">持っていないカードなら、この店でもっとお得</div>`
+    + rows
+    + (hasAd ? `<div class="rec-note">※「このカードを作る」は広告（アフィリエイト）リンクです。還元率は掲載時点の情報で、条件により変わります。</div>` : "")
+    + `</div>`;
+}
+
+// おすすめ枠のリンクがクリックされた回数を GA4 で見られるようにする
+resultDiv.addEventListener("click", (e) => {
+  const a = e.target.closest("a[data-rec]");
+  if (!a) return;
+  if (RECOMMEND_PREVIEW && a.getAttribute("href") === "#") { e.preventDefault(); return; }
+  if (typeof gtag === "function") {
+    gtag("event", "recommend_click", { link_type: a.dataset.rec, card_name: a.dataset.card });
+  }
+});
 
 // initialize: load CSV in background and render defaults
 loadData().then(()=> console.log("Initial CSV load attempted"));

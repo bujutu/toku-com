@@ -29,6 +29,7 @@ const methods = [
   { id: "d_barai", name: "d払い" },
   { id: "rakuten_pay", name: "楽天ペイ" },
   { id: "au_pay", name: "au PAY" },
+  { id: "aeon_pay", name: "AEON Pay" },
   
   // 交通系IC系
   { id: "suica", name: "Suica" },
@@ -46,7 +47,9 @@ const methods = [
   { id: "smbc_card", name: "三井住友カード" },
   { id: "recruit_card", name: "リクルートカード" },
   { id: "epos_card", name: "エポスカード" },
-  { id: "amex", name: "AMEXカード" }
+  { id: "amex", name: "AMEXカード" },
+  { id: "ana_card", name: "ANAカード" },
+  { id: "jal_card", name: "JALカード" }
 ];
 const DEFAULT_COUNT = 6;
 const topIds = methods.slice(0, DEFAULT_COUNT).map(m => m.id);
@@ -65,6 +68,7 @@ const columnMap = {
   d_barai: ["d払い", "d_barai"],
   rakuten_pay: ["楽天ペイ", "楽天Pay", "RakutenPay", "rakuten_pay"],
   au_pay: ["au PAY", "au_pay"],
+  aeon_pay: ["AEON Pay", "イオンペイ", "aeon_pay"],
   // 交通系
   suica: ["Suica", "Suica / モバイルSuica", "suica"],
   pasmo: ["PASMO", "PASMO / モバイルPASMO", "pasmo"],
@@ -81,7 +85,9 @@ const columnMap = {
   jcb_w: ["JCBカード W", "jcb_w"],
   recruit_card: ["リクルートカード", "recruit_card"],
   epos_card: ["エポスカード", "EPOSカード", "epos_card"],
-  amex: ["AMEX", "amex", "Amex", "アメックス"]
+  amex: ["AMEX", "amex", "Amex", "アメックス"],
+  ana_card: ["ANAカード", "ana_card"],
+  jal_card: ["JALカード", "jal_card"]
 };
 
 // --- おすすめ枠（持っていない高還元カード） ---

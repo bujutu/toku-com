@@ -48,6 +48,7 @@ const methods = [
   { id: "recruit_card", name: "リクルートカード" },
   { id: "epos_card", name: "エポスカード" },
   { id: "amex", name: "AMEXカード" },
+  { id: "famima_card", name: "ファミマカード" },
   { id: "ana_card", name: "ANAカード" },
   { id: "jal_card", name: "JALカード" }
 ];
@@ -86,6 +87,7 @@ const columnMap = {
   recruit_card: ["リクルートカード", "recruit_card"],
   epos_card: ["エポスカード", "EPOSカード", "epos_card"],
   amex: ["AMEX", "amex", "Amex", "アメックス"],
+  famima_card: ["ファミマカード", "ファミマTカード", "famima_card"],
   ana_card: ["ANAカード", "ana_card"],
   jal_card: ["JALカード", "jal_card"]
 };

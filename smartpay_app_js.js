@@ -45,7 +45,8 @@ const methods = [
   { id: "credit_0.5", name: "クレカ（0.5%）" },
   { id: "rakuten_card", name: "楽天カード" },
   { id: "smbc_card", name: "三井住友カード" },
-  { id: "olive", name: "Olive（スマホタッチ）" },
+  { id: "olive_touch", name: "Olive（スマホタッチ）" },
+  { id: "olive_card", name: "Olive" },
   { id: "recruit_card", name: "リクルートカード" },
   { id: "epos_card", name: "エポスカード" },
   { id: "amex", name: "AMEXカード" },
@@ -83,7 +84,8 @@ const columnMap = {
   rakuten_card: ["楽天カード", "Rakuten Card", "rakuten_card"],
   smbc_card: ["三井住友カード", "SMBCカード", "smbc_card"],
   smbc_touch: ["三井住友カード（スマホタッチ）", "SMBCタッチ", "smbc_touch"],
-  olive: ["Olive（スマホタッチ）", "Olive", "Oliveフレキシブルペイ", "オリーブ", "olive"],
+  olive_touch: ["Olive（スマホタッチ）", "Oliveタッチ", "olive_touch"],
+  olive_card: ["Olive", "Oliveフレキシブルペイ", "オリーブ", "olive_card"],
   mufg_card: ["三菱UFJカード", "mufg_card"],
   jcb_w: ["JCBカード W", "jcb_w"],
   recruit_card: ["リクルートカード", "recruit_card"],
@@ -104,7 +106,7 @@ const columnMap = {
 //  ※ 確認用: URL の末尾に ?recommend_preview=1 を付けると、リンクが空でも枠を表示する（ボタンは仮表示）。
 // クレカ（1%）（0.5%）や交通系IC（Suica/PASMO）は、特定のカードではないのでここに入れない。
 const RECOMMEND_CARDS = [
-  { name: "Olive", methodIds: ["olive"], affiliateUrl: "", articleUrl: "" },
+  { name: "Olive", methodIds: ["olive_touch", "olive_card"], affiliateUrl: "", articleUrl: "" },
   { name: "三井住友カード", methodIds: ["smbc_touch", "smbc_card"], affiliateUrl: "", articleUrl: "" },
   { name: "三菱UFJカード", methodIds: ["mufg_card"], affiliateUrl: "", articleUrl: "" },
   { name: "JCBカード W", methodIds: ["jcb_w"], affiliateUrl: "", articleUrl: "" }
